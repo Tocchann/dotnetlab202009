@@ -56,7 +56,6 @@ namespace PickupFolder
 			return ShowDialog( hwndSrc != null ? hwndSrc.Handle : IntPtr.Zero );
 		}
 		#endregion
-		#region InternalCode
 		public bool ShowDialog( IntPtr ownerWindow )
 		{
 			//	オーナーウィンドウを正規化する
@@ -68,6 +67,25 @@ namespace PickupFolder
 			{
 				//	フォルダ選択モードに切り替え
 				dlg.SetOptions( FOS.FORCEFILESYSTEM | FOS.PICKFOLDERS );
+				//	以前選択されていたフォルダを指定
+				bool setFolder = false;
+				var item = CreateItem( SelectedPath );
+				if( item != null )
+				{
+					dlg.SetFolder( item );
+					Marshal.ReleaseComObject( item );
+					setFolder = true;
+				}
+				//	まだフォルダを設定していない場合は初期フォルダを設定する
+				if( !setFolder )
+				{
+					item = CreateItem( InitialFolder );
+					if( item != null )
+					{
+						dlg.SetFolder( item );
+						Marshal.ReleaseComObject( item );
+					}
+				}
 				//	タイトル
 				if( !string.IsNullOrWhiteSpace( Title ) )
 				{
@@ -78,41 +96,19 @@ namespace PickupFolder
 				{
 					foreach( var place in m_places )
 					{
-						if( NativeMethods.SUCCEEDED( NativeMethods.SHCreateItemFromParsingName( place.folder, 
-														IntPtr.Zero, typeof( IShellItem ).GUID, out var item ) ) )
+						item = CreateItem( place.folder );
+						if( item != null )
 						{
 							dlg.AddPlace( item, place.fdap );
 							Marshal.ReleaseComObject( item );
 						}
 					}
 				}
-				//	以前選択されていたフォルダを指定
-				bool setFolder = false;
-				if( !string.IsNullOrWhiteSpace( SelectedPath ) )
-				{
-					if( NativeMethods.SUCCEEDED( NativeMethods.SHCreateItemFromParsingName( SelectedPath,
-													IntPtr.Zero, typeof(IShellItem).GUID, out var item ) ) )
-					{
-						dlg.SetFolder( item );
-						Marshal.ReleaseComObject( item );
-						setFolder = true;
-					}
-				}
-				//	まだフォルダを設定していない場合は初期フォルダを設定する
-				if( !setFolder && !string.IsNullOrWhiteSpace( InitialFolder ) )
-				{
-					if( NativeMethods.SUCCEEDED( NativeMethods.SHCreateItemFromParsingName( InitialFolder,
-													IntPtr.Zero, typeof( IShellItem ).GUID, out var item ) ) )
-					{
-						dlg.SetFolder( item );
-						Marshal.ReleaseComObject( item );
-					}
-				}
 				//	ダイアログを表示
 				var hRes = dlg.Show( ownerWindow );
 				if( NativeMethods.SUCCEEDED( hRes ) )
 				{
-					var item = dlg.GetResult();
+					item = dlg.GetResult();
 					SelectedPath = item.GetDisplayName( SIGDN.FILESYSPATH );
 					Marshal.ReleaseComObject( item );
 					return true;
@@ -124,7 +120,6 @@ namespace PickupFolder
 			}
 			return false;
 		}
-		#endregion
 		#region interop
 		private static class NativeMethods
 		{
@@ -239,7 +234,7 @@ namespace PickupFolder
 		/// </summary>
 		/// <param name="hwndOwner"></param>
 		/// <returns></returns>
-		internal static IntPtr GetSafeOwnerWindow( IntPtr hwndOwner )
+		private static IntPtr GetSafeOwnerWindow( IntPtr hwndOwner )
 		{
 			//	無効なウィンドウを参照している場合の排除
 			if( hwndOwner != IntPtr.Zero && !NativeMethods.IsWindow( hwndOwner ) )
@@ -264,6 +259,20 @@ namespace PickupFolder
 				hwndOwner = NativeMethods.GetLastActivePopup( hwndOwner );
 			}
 			return hwndOwner;
+		}
+		/// <summary>
+		/// SHCreateItemFromParseName() のラッパー。
+		/// ファイルパスから、IShellItem を作成する専用メソッドとして用意。
+		/// </summary>
+		private static IShellItem CreateItem( string folder )
+		{
+			if( !string.IsNullOrWhiteSpace( folder ) && 
+				NativeMethods.SUCCEEDED( NativeMethods.SHCreateItemFromParsingName( folder,
+											IntPtr.Zero, typeof( IShellItem ).GUID, out var item ) ) )
+			{
+				return item;
+			}
+			return null;
 		}
 		private List<(string folder, FDAP fdap)> m_places;
 		#endregion
