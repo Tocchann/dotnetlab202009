@@ -45,7 +45,7 @@ namespace PickupFolder
 			}
 			m_places.Add( ( folder, fdap ) );
 		}
-		#region WPF
+#region WPF
 		public bool ShowDialog()
 		{
 			return ShowDialog( Application.Current.MainWindow );
@@ -55,7 +55,7 @@ namespace PickupFolder
 			var hwndSrc = System.Windows.Interop.HwndSource.FromVisual( ownerWindow ) as System.Windows.Interop.HwndSource;
 			return ShowDialog( hwndSrc != null ? hwndSrc.Handle : IntPtr.Zero );
 		}
-		#endregion
+#endregion
 		public bool ShowDialog( IntPtr ownerWindow )
 		{
 			//	オーナーウィンドウを正規化する
@@ -69,7 +69,7 @@ namespace PickupFolder
 				dlg.SetOptions( FOS.FORCEFILESYSTEM | FOS.PICKFOLDERS );
 				//	以前選択されていたフォルダを指定
 				bool setFolder = false;
-				var item = CreateItem( SelectedPath );
+				IShellItem item = CreateItem( SelectedPath );
 				if( item != null )
 				{
 					dlg.SetFolder( item );
@@ -120,7 +120,55 @@ namespace PickupFolder
 			}
 			return false;
 		}
-		#region interop
+#region private members
+		/// <summary>
+		/// hwndOwner で指定されたウィンドウをオーナーウィンドウとして指定できるウィンドウに正規化する
+		/// </summary>
+		/// <param name="hwndOwner"></param>
+		/// <returns></returns>
+		private static IntPtr GetSafeOwnerWindow( IntPtr hwndOwner )
+		{
+			//	無効なウィンドウを参照している場合の排除
+			if( hwndOwner != IntPtr.Zero && !NativeMethods.IsWindow( hwndOwner ) )
+			{
+				hwndOwner = IntPtr.Zero;
+			}
+			//	オーナーウィンドウの基本を探す
+			if( hwndOwner == IntPtr.Zero )
+			{
+				hwndOwner = NativeMethods.GetForegroundWindow();
+			}
+			//	トップレベルウィンドウを探す
+			IntPtr hwndParent = hwndOwner;
+			while( hwndParent != IntPtr.Zero )
+			{
+				hwndOwner = hwndParent;
+				hwndParent = NativeMethods.GetParent( hwndOwner );
+			}
+			//	トップレベルウィンドウに所属する現在アクティブなポップアップ(自分も含む)を取得
+			if( hwndOwner != IntPtr.Zero )
+			{
+				hwndOwner = NativeMethods.GetLastActivePopup( hwndOwner );
+			}
+			return hwndOwner;
+		}
+		/// <summary>
+		/// SHCreateItemFromParseName() のラッパー。
+		/// ファイルパスから、IShellItem を作成する専用メソッドとして用意。
+		/// </summary>
+		private static IShellItem CreateItem( string folder )
+		{
+			if( !string.IsNullOrWhiteSpace( folder ) &&
+				NativeMethods.SUCCEEDED( NativeMethods.SHCreateItemFromParsingName( folder,
+											IntPtr.Zero, typeof( IShellItem ).GUID, out var item ) ) )
+			{
+				return item;
+			}
+			return null;
+		}
+		private List<(string folder, FDAP fdap)> m_places;
+#endregion
+#region interop
 		private static class NativeMethods
 		{
 			//	HWND サポート
@@ -144,8 +192,8 @@ namespace PickupFolder
 			internal static bool SUCCEEDED( int result ) => result >= 0;
 			internal static bool FAILED( int result ) => result < 0;
 		}
-		#endregion
-		#region COM Interop
+#endregion
+#region COM Interop
 		/// <summary>
 		/// IShellItem シェル(エクスプローラ)がファイル等を仮想的にアイテムとして扱うためのインターフェース
 		/// </summary>
@@ -227,54 +275,6 @@ namespace PickupFolder
 			FORCEFILESYSTEM = 0x40,
 			PICKFOLDERS = 0x20,
 		}
-		#endregion
-		#region private members
-		/// <summary>
-		/// hwndOwner で指定されたウィンドウをオーナーウィンドウとして指定できるウィンドウに正規化する
-		/// </summary>
-		/// <param name="hwndOwner"></param>
-		/// <returns></returns>
-		private static IntPtr GetSafeOwnerWindow( IntPtr hwndOwner )
-		{
-			//	無効なウィンドウを参照している場合の排除
-			if( hwndOwner != IntPtr.Zero && !NativeMethods.IsWindow( hwndOwner ) )
-			{
-				hwndOwner = IntPtr.Zero;
-			}
-			//	オーナーウィンドウの基本を探す
-			if( hwndOwner == IntPtr.Zero )
-			{
-				hwndOwner = NativeMethods.GetForegroundWindow();
-			}
-			//	トップレベルウィンドウを探す
-			IntPtr hwndParent = hwndOwner;
-			while( hwndParent != IntPtr.Zero )
-			{
-				hwndOwner = hwndParent;
-				hwndParent = NativeMethods.GetParent( hwndOwner );
-			}
-			//	トップレベルウィンドウに所属する現在アクティブなポップアップ(自分も含む)を取得
-			if( hwndOwner != IntPtr.Zero )
-			{
-				hwndOwner = NativeMethods.GetLastActivePopup( hwndOwner );
-			}
-			return hwndOwner;
-		}
-		/// <summary>
-		/// SHCreateItemFromParseName() のラッパー。
-		/// ファイルパスから、IShellItem を作成する専用メソッドとして用意。
-		/// </summary>
-		private static IShellItem CreateItem( string folder )
-		{
-			if( !string.IsNullOrWhiteSpace( folder ) && 
-				NativeMethods.SUCCEEDED( NativeMethods.SHCreateItemFromParsingName( folder,
-											IntPtr.Zero, typeof( IShellItem ).GUID, out var item ) ) )
-			{
-				return item;
-			}
-			return null;
-		}
-		private List<(string folder, FDAP fdap)> m_places;
-		#endregion
+#endregion
 	}
 }

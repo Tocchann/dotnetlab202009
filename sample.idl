@@ -1,0 +1,84 @@
+
+
+
+[
+    local,
+    object,
+    uuid(00000000-0000-0000-C000-000000000046),
+    pointer_default(unique)
+]
+interface IUnknown
+{
+    HRESULT QueryInterface(
+        [in] REFIID riid,
+        [out, iid_is(riid), annotation( "_COM_Outptr_" )] void** ppvObject );
+    ULONG AddRef();
+    ULONG Release();
+}
+
+
+
+[
+    uuid(b4db1657-70d7-485e-8e3e-6fcb5a5c1802),
+    object,
+    pointer_default(unique)
+]
+interface IModalWindow : IUnknown
+{
+    [local] HRESULT Show( [in, unique, annotation( "_In_opt_" )] HWND hwndOwner );
+    [call_as(Show)] HRESULT RemoteShow( [in, unique] HWND hwndOwner );
+}
+
+
+
+[
+    uuid(42f85136-db7e-439c-85f1-e4075d135fc8),
+    object,
+    pointer_default(unique)
+]
+interface IFileDialog : IModalWindow
+{
+    typedef DWORD FILEOPENDIALOGOPTIONS;
+    HRESULT SetFileTypes(
+        [in] UINT cFileTypes,
+        [in, size_is(cFileTypes)] const COMDLG_FILTERSPEC* rgFilterSpec );
+    HRESULT SetFileTypeIndex( [in] UINT iFileType );
+    HRESULT GetFileTypeIndex( [out] UINT* piFileType );
+    HRESULT Advise(
+        [in] IFileDialogEvents* pfde,
+        [out] DWORD* pdwCookie );
+    HRESULT Unadvise( [in] DWORD dwCookie );
+    HRESULT SetOptions( [in] FILEOPENDIALOGOPTIONS fos );
+    HRESULT GetOptions( [out] FILEOPENDIALOGOPTIONS* pfos );
+    HRESULT SetDefaultFolder( [in] IShellItem* psi );
+    HRESULT SetFolder( [in] IShellItem* psi );
+    HRESULT GetFolder( [out] IShellItem** ppsi );
+    HRESULT GetCurrentSelection( [out] IShellItem** ppsi );
+    HRESULT SetFileName( [in, string] LPCWSTR pszName );
+    HRESULT GetFileName( [out, string] LPWSTR* pszName );
+    HRESULT SetTitle( [in, string] LPCWSTR pszTitle );
+    HRESULT SetOkButtonLabel( [in, string] LPCWSTR pszText );
+    HRESULT SetFileNameLabel( [in, string] LPCWSTR pszLabel );
+    HRESULT GetResult( [out] IShellItem** ppsi );
+    HRESULT AddPlace(
+        [in] IShellItem* psi,
+        [in] FDAP fdap );
+    HRESULT SetDefaultExtension( [in, string] LPCWSTR pszDefaultExtension );
+    HRESULT Close( [in] HRESULT hr );
+    HRESULT SetClientGuid( [in] REFGUID guid );
+    HRESULT ClearClientData();
+    HRESULT SetFilter( [in] IShellItemFilter* pFilter );
+}
+
+
+
+[
+    uuid(d57c7288-d4ad-4768-be02-9d969532d960),
+    object,
+    pointer_default(unique)
+]
+interface IFileOpenDialog : IFileDialog
+{
+    HRESULT GetResults( [out] IShellItemArray** ppenum );
+    HRESULT GetSelectedItems( [out] IShellItemArray** ppsai );
+}
