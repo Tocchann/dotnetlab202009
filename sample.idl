@@ -1,6 +1,4 @@
-
-
-
+// IUnknown。すべてのCOMインターフェースはこのインターフェースの派生
 [
     local,
     object,
@@ -15,9 +13,7 @@ interface IUnknown
     ULONG AddRef();
     ULONG Release();
 }
-
-
-
+//  IModalWindow。 モーダルダイアログの表示部分だけを切り出したインターフェース
 [
     uuid(b4db1657-70d7-485e-8e3e-6fcb5a5c1802),
     object,
@@ -28,9 +24,7 @@ interface IModalWindow : IUnknown
     [local] HRESULT Show( [in, unique, annotation( "_In_opt_" )] HWND hwndOwner );
     [call_as(Show)] HRESULT RemoteShow( [in, unique] HWND hwndOwner );
 }
-
-
-
+//  IFileDialog。Vista で導入された COM 形式のファイルダイアログの基本インターフェース。保存・読み込みなどはここから派生したものが使われる
 [
     uuid(42f85136-db7e-439c-85f1-e4075d135fc8),
     object,
@@ -38,7 +32,6 @@ interface IModalWindow : IUnknown
 ]
 interface IFileDialog : IModalWindow
 {
-    typedef DWORD FILEOPENDIALOGOPTIONS;
     HRESULT SetFileTypes(
         [in] UINT cFileTypes,
         [in, size_is(cFileTypes)] const COMDLG_FILTERSPEC* rgFilterSpec );
@@ -69,9 +62,7 @@ interface IFileDialog : IModalWindow
     HRESULT ClearClientData();
     HRESULT SetFilter( [in] IShellItemFilter* pFilter );
 }
-
-
-
+//  IFileOpenDialog。ファイルを開くに特化したインターフェース。保存では使われることがないメソッドが定義されている。
 [
     uuid(d57c7288-d4ad-4768-be02-9d969532d960),
     object,
@@ -81,4 +72,29 @@ interface IFileOpenDialog : IFileDialog
 {
     HRESULT GetResults( [out] IShellItemArray** ppenum );
     HRESULT GetSelectedItems( [out] IShellItemArray** ppsai );
+}
+//  IShellItem。エクスプローラ(==シェル)で、ファイルやフォルダなどを仮想的に扱うためのインターフェース。IFileDialogでパス情報を受け渡しするために必要。
+[
+    uuid(43826d1e-e718-42ee-bc55-a1e261c37bfe),
+    object,
+    pointer_default(unique)
+]
+interface IShellItem : IUnknown
+{
+    HRESULT BindToHandler(
+        [in, unique] IBindCtx* pbc,
+        [in] REFGUID bhid,
+        [in] REFIID riid,
+        [out, iid_is(riid)] void** ppv );
+    HRESULT GetParent( [out] IShellItem** ppsi );
+    HRESULT GetDisplayName(
+        [in] SIGDN sigdnName,
+        [out, string, annotation( "_Outptr_result_nullonfailure_" )] LPWSTR* ppszName );
+    HRESULT GetAttributes(
+        [in] SFGAOF sfgaoMask,
+        [out] SFGAOF* psfgaoAttribs );
+    HRESULT Compare(
+        [in] IShellItem* psi,
+        [in] SICHINTF hint,
+        [out] int* piOrder );
 }
