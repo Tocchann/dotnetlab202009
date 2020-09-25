@@ -20,9 +20,13 @@ namespace SelectFolder
 	/// </summary>
 	public partial class MainWindow : Window
 	{
+		private string documents;
 		public MainWindow()
 		{
 			InitializeComponent();
+			//	アプリケーションのドキュメントフォルダ
+			documents = System.IO.Path.Combine( Environment.GetFolderPath( Environment.SpecialFolder.MyDocuments ), "Wankuma" );
+			System.IO.Directory.CreateDirectory( documents );
 		}
 
 		private void OnClick_SelectFolder( object sender, RoutedEventArgs e )
@@ -31,7 +35,7 @@ namespace SelectFolder
 			dlg.SelectedPath = EditSelFolder.Text;
 			dlg.InitialFolder = AppDomain.CurrentDomain.BaseDirectory;
 			dlg.Title = "フォルダを選択してください";
-			dlg.AddPlace( @"C:\Projects\Source\Tocchann\dotnetlab202009", PickupFolder.FDAP.TOP );
+			dlg.AddPlace( documents, PickupFolder.FDAP.TOP );
 			if( dlg.ShowDialog() )
 			{
 				EditSelFolder.Text = dlg.SelectedPath;
