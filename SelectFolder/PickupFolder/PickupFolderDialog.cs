@@ -39,10 +39,6 @@ namespace PickupFolder
 		/// <param name="value"></param>
 		public void AddPlace( string folder, FDAP fdap )
 		{
-			if( m_places == null )
-			{
-				m_places = new List<(string folder, FDAP fdap)>();
-			}
 			m_places.Add( ( folder, fdap ) );
 		}
 #region WPF
@@ -92,16 +88,13 @@ namespace PickupFolder
 					dlg.SetTitle( Title );
 				}
 				//	ショートカット追加
-				if( m_places.Count != 0 )
+				foreach( var place in m_places )
 				{
-					foreach( var place in m_places )
+					item = CreateItem( place.folder );
+					if( item != null )
 					{
-						item = CreateItem( place.folder );
-						if( item != null )
-						{
-							dlg.AddPlace( item, place.fdap );
-							Marshal.ReleaseComObject( item );
-						}
+						dlg.AddPlace( item, place.fdap );
+						Marshal.ReleaseComObject( item );
 					}
 				}
 				//	ダイアログを表示
@@ -109,7 +102,7 @@ namespace PickupFolder
 				if( NativeMethods.SUCCEEDED( hRes ) )
 				{
 					item = dlg.GetResult();
-					SelectedPath = item.GetDisplayName( SIGDN.FILESYSPATH );
+					SelectedPath = item.GetName( SIGDN.FILESYSPATH );
 					Marshal.ReleaseComObject( item );
 					return true;
 				}
@@ -166,7 +159,7 @@ namespace PickupFolder
 			}
 			return null;
 		}
-		private List<(string folder, FDAP fdap)> m_places;
+		private List<(string folder, FDAP fdap)> m_places = new List<(string folder, FDAP fdap)>();
 #endregion
 #region interop
 		private static class NativeMethods
@@ -204,15 +197,16 @@ namespace PickupFolder
 		]
 		private interface IShellItem
 		{
-			void NotUsed(); // void BindToHandler();	名前まで、省略する例(通常はここまでしない)
+			void BindToHandler(); // BindToHandler 省略
 			void GetParent(); // GetParent 省略
 			/// <summary>
 			/// このオブジェクトの文字列表記を取得
+			/// GetDisplayName が本来のメソッド名。今回わざと名前を変更。
 			/// </summary>
 			/// <param name="sigdnName"></param>
 			/// <returns>sigdnName に応じた文字列</returns>
 			[return: MarshalAs( UnmanagedType.LPWStr )]
-			string GetDisplayName( SIGDN sigdnName );
+			string GetName( SIGDN sigdnName );
 			void GetAttributes();  //  省略
 			void Compare();  // Compare 省略
 		}

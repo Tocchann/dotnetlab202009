@@ -33,7 +33,7 @@ namespace SelectFolder
 		{
 			var dlg = new PickupFolder.PickupFolderDialog();
 			dlg.SelectedPath = EditSelFolder.Text;
-			dlg.InitialFolder = AppDomain.CurrentDomain.BaseDirectory;
+			dlg.InitialFolder = documents;
 			dlg.Title = "フォルダを選択してください";
 			dlg.AddPlace( documents, PickupFolder.FDAP.TOP );
 			if( dlg.ShowDialog() )
